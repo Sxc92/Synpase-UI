@@ -1,0 +1,210 @@
+---
+globs: *.vue,*.ts,*.tsx
+description: UI 框架使用规范 - Ant Design + Tailwind CSS + Shadcn UI + Vxe Table
+---
+
+# UI 框架使用规范
+
+## Ant Design Vue 4.x 规范
+
+### 1. 组件导入规范
+```typescript
+// 按需导入组件
+import { Button, Table, Form, Input } from 'ant-design-vue'
+import type { TableColumnsType } from 'ant-design-vue'
+
+// 导入样式
+import 'ant-design-vue/dist/reset.css'
+```
+
+### 2. 组件使用规范
+```vue
+<template>
+  <a-button type="primary" @click="handleClick">
+    点击按钮
+  </a-button>
+  
+  <a-table 
+    :columns="columns" 
+    :data-source="dataSource"
+    :pagination="paginationConfig"
+  />
+</template>
+
+<script setup lang="ts">
+import { Button, Table } from 'ant-design-vue'
+import type { TableColumnsType } from 'ant-design-vue'
+
+// 表格列定义
+const columns: TableColumnsType = [
+  {
+    title: '姓名',
+    dataIndex: 'name',
+    key: 'name',
+  },
+  {
+    title: '年龄',
+    dataIndex: 'age',
+    key: 'age',
+  },
+]
+</script>
+```
+
+### 3. 主题定制
+- 使用 CSS 变量覆盖默认主题
+- 在 `src/styles/antd-theme.scss` 中定义主题变量
+- 遵循 Ant Design 设计规范
+
+## Vxe Table 规范
+
+### 1. 组件导入和使用
+```typescript
+// 导入 Vxe Table
+import { VxeTable, VxeColumn } from 'vxe-table'
+import 'vxe-table/lib/style.css'
+```
+
+### 2. 基础表格使用
+```vue
+<template>
+  <vxe-table :data="tableData" border>
+    <vxe-column field="name" title="姓名"></vxe-column>
+    <vxe-column field="age" title="年龄"></vxe-column>
+    <vxe-column field="email" title="邮箱"></vxe-column>
+  </vxe-table>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { VxeTable, VxeColumn } from 'vxe-table'
+
+const tableData = ref([
+  { name: '张三', age: 25, email: 'zhangsan@example.com' },
+  { name: '李四', age: 30, email: 'lisi@example.com' },
+])
+</script>
+```
+
+### 3. 高级功能
+- **排序**: 使用 `sortable` 属性
+- **筛选**: 使用 `filters` 和 `filter-multiple` 属性
+- **分页**: 使用 `vxe-pager` 组件
+- **编辑**: 使用 `edit-render` 属性
+- **树形表格**: 使用 `tree-config` 属性
+- **虚拟滚动**: 使用 `scroll-y` 属性
+
+### 4. 相关文档
+- [Vxe Table 官方文档](https://vxetable.cn/)
+- [Vxe Table GitHub](https://github.com/x-extends/vxe-table)
+- [Vxe Table 示例](https://vxetable.cn/v4/#/table/start/install)
+
+## Tailwind CSS 规范
+
+### 1. 类名使用规范
+```vue
+<template>
+  <!-- 优先使用 Tailwind 工具类 -->
+  <div class="flex items-center justify-between p-4 bg-white rounded-lg shadow-md">
+    <h2 class="text-xl font-semibold text-gray-800">标题</h2>
+    <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+      按钮
+    </button>
+  </div>
+</template>
+```
+
+### 2. 响应式设计
+```vue
+<template>
+  <!-- 使用响应式前缀 -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="p-4 bg-gray-100 rounded">内容</div>
+  </div>
+</template>
+```
+
+### 3. 自定义样式
+- 优先使用 Tailwind 工具类
+- 复杂样式使用 SCSS 文件
+- 在 `src/styles/tailwind.scss` 中定义自定义样式
+
+## Shadcn UI (Vue 版本) 规范
+
+### 1. 组件安装和使用
+```bash
+# 安装 Shadcn UI 组件
+npx shadcn-vue@latest add button
+npx shadcn-vue@latest add card
+```
+
+### 2. 组件使用规范
+```vue
+<template>
+  <Button variant="default" size="sm">
+    按钮
+  </Button>
+  
+  <Card>
+    <CardHeader>
+      <CardTitle>卡片标题</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>卡片内容</p>
+    </CardContent>
+  </Card>
+</template>
+
+<script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+</script>
+```
+
+### 3. 组件定制
+- 在 `src/components/ui/` 目录下管理 Shadcn UI 组件
+- 使用 `cn()` 工具函数合并类名
+- 支持主题定制和样式覆盖
+
+## Iconify 图标规范
+
+### 1. 图标导入和使用
+```vue
+<template>
+  <!-- 使用 Iconify Vue 组件 -->
+  <Icon icon="mdi:home" class="w-6 h-6 text-blue-500" />
+  <Icon icon="heroicons:user" class="w-5 h-5" />
+</template>
+
+<script setup lang="ts">
+import { Icon } from '@iconify/vue'
+</script>
+```
+
+### 2. 图标选择规范
+- 优先使用 Material Design Icons (mdi:)
+- 备选 Heroicons (heroicons:)
+- 图标大小使用 Tailwind 类名控制
+- 图标颜色使用 Tailwind 颜色类
+
+## 样式组织规范
+
+### 1. 文件结构
+```
+src/styles/
+├── antd-theme.scss      # Ant Design 主题定制
+├── tailwind.scss        # Tailwind 自定义样式
+├── global.scss          # 全局样式
+└── variables.scss       # SCSS 变量定义
+```
+
+### 2. 样式优先级
+1. Tailwind CSS 工具类（最高优先级）
+2. Shadcn UI 组件样式
+3. Ant Design 组件样式
+4. 自定义 SCSS 样式
+
+### 3. 响应式设计原则
+- 移动端优先设计
+- 使用 Tailwind 响应式前缀
+- 确保所有组件在不同屏幕尺寸下正常显示

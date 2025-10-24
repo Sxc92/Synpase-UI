@@ -1,0 +1,444 @@
+---
+globs: *.ts,*.tsx,*.vue
+description: TypeScript 严格类型检查和代码质量规范
+---
+
+# TypeScript 严格类型检查和代码质量规范
+
+## TypeScript 配置规范
+
+### 1. tsconfig.json 配置
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/core/*": ["src/core/*"],
+      "@/business/*": ["src/business/*"],
+      "@/shared/*": ["src/shared/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+## 类型定义规范
+
+### 1. 接口定义规范
+```typescript
+// src/core/types/api.ts
+/**
+ * API 请求基础接口
+ */
+export interface BaseRequest {
+  readonly timestamp: number
+  readonly requestId: string
+}
+
+/**
+ * API 响应基础接口
+ */
+export interface BaseResponse<T = unknown> {
+  readonly code: number
+  readonly message: string
+  readonly data: T
+  readonly timestamp: number
+}
+
+/**
+ * 分页请求参数
+ */
+export interface PaginationRequest extends BaseRequest {
+  readonly page: number
+  readonly pageSize: number
+  readonly sortBy?: string
+  readonly sortOrder?: 'asc' | 'desc'
+}
+
+/**
+ * 分页响应数据
+ */
+export interface PaginationResponse<T> extends BaseResponse<T[]> {
+  readonly pagination: {
+    readonly page: number
+    readonly pageSize: number
+    readonly total: number
+    readonly totalPages: number
+  }
+}
+```
+
+### 2. 泛型使用规范
+```typescript
+// src/core/types/common.ts
+/**
+ * 通用响应类型
+ */
+export type ApiResponse<T> = BaseResponse<T>
+
+/**
+ * 分页响应类型
+ */
+export type PaginatedResponse<T> = PaginationResponse<T>
+
+/**
+ * 可选字段类型
+ */
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+/**
+ * 必需字段类型
+ */
+export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
+
+/**
+ * 深度可选类型
+ */
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
+}
+
+/**
+ * 深度只读类型
+ */
+export type DeepReadonly<T> = {
+  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P]
+}
+```
+
+### 3. 组件 Props 类型规范
+```typescript
+// src/core/types/component.ts
+import type { VNode } from 'vue'
+
+/**
+ * 组件基础 Props
+ */
+export interface BaseComponentProps {
+  readonly className?: string
+  readonly style?: Readonly<Record<string, string | number>>
+  readonly id?: string
+}
+
+/**
+ * 表单组件 Props
+ */
+export interface FormComponentProps extends BaseComponentProps {
+  readonly disabled?: boolean
+  readonly readonly?: boolean
+  readonly required?: boolean
+  readonly placeholder?: string
+}
+
+/**
+ * 按钮组件 Props
+ */
+export interface ButtonProps extends BaseComponentProps {
+  readonly type?: 'button' | 'submit' | 'reset'
+  readonly variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
+  readonly size?: 'sm' | 'md' | 'lg'
+  readonly disabled?: boolean
+  readonly loading?: boolean
+  readonly icon?: VNode
+}
+
+/**
+ * 表格列定义
+ */
+export interface TableColumn<T = unknown> {
+  readonly key: string
+  readonly title: string
+  readonly dataIndex: keyof T
+  readonly width?: number
+  readonly align?: 'left' | 'center' | 'right'
+  readonly sortable?: boolean
+  readonly filterable?: boolean
+  readonly render?: (value: unknown, record: T, index: number) => VNode
+}
+```
+
+## 严格类型检查规范
+
+### 1. 函数类型定义
+```typescript
+// src/core/utils/validation.ts
+/**
+ * 验证函数类型
+ */
+export type Validator<T = unknown> = (value: T) => boolean | string
+
+/**
+ * 验证规则类型
+ */
+export interface ValidationRule<T = unknown> {
+  readonly required?: boolean
+  readonly validator?: Validator<T>
+  readonly message?: string
+}
+
+/**
+ * 表单验证函数
+ */
+export const validateForm = <T extends Record<string, unknown>>(
+  data: T,
+  rules: Record<keyof T, ValidationRule<T[keyof T]>>
+): Record<keyof T, string> => {
+  const errors: Record<keyof T, string> = {} as Record<keyof T, string>
+  
+  for (const [key, rule] of Object.entries(rules)) {
+    const value = data[key as keyof T]
+    
+    if (rule.required && (value === undefined || value === null || value === '')) {
+      errors[key as keyof T] = rule.message || `${String(key)} is required`
+      continue
+    }
+    
+    if (rule.validator && !rule.validator(value as T[keyof T])) {
+      errors[key as keyof T] = rule.message || `${String(key)} is invalid`
+    }
+  }
+  
+  return errors
+}
+```
+
+### 2. 事件处理类型
+```typescript
+// src/core/types/events.ts
+/**
+ * 自定义事件类型
+ */
+export interface CustomEventMap {
+  'user:login': { userId: string; timestamp: number }
+  'user:logout': { userId: string; timestamp: number }
+  'order:created': { orderId: string; amount: number }
+  'order:updated': { orderId: string; status: string }
+}
+
+/**
+ * 事件监听器类型
+ */
+export type EventListener<T> = (event: T) => void | Promise<void>
+
+/**
+ * 事件发射器接口
+ */
+export interface EventEmitter {
+  on<K extends keyof CustomEventMap>(
+    event: K,
+    listener: EventListener<CustomEventMap[K]>
+  ): void
+  
+  off<K extends keyof CustomEventMap>(
+    event: K,
+    listener: EventListener<CustomEventMap[K]>
+  ): void
+  
+  emit<K extends keyof CustomEventMap>(
+    event: K,
+    data: CustomEventMap[K]
+  ): void
+}
+```
+
+### 3. 异步操作类型
+```typescript
+// src/core/types/async.ts
+/**
+ * 异步状态类型
+ */
+export interface AsyncState<T> {
+  readonly data: T | null
+  readonly loading: boolean
+  readonly error: Error | null
+}
+
+/**
+ * 异步操作结果类型
+ */
+export type AsyncResult<T> = 
+  | { success: true; data: T }
+  | { success: false; error: Error }
+
+/**
+ * 异步操作函数类型
+ */
+export type AsyncFunction<T, P extends readonly unknown[] = []> = (
+  ...args: P
+) => Promise<T>
+
+/**
+ * 重试配置类型
+ */
+export interface RetryConfig {
+  readonly maxAttempts: number
+  readonly delay: number
+  readonly backoff?: 'linear' | 'exponential'
+}
+```
+
+## 代码质量规范
+
+### 1. ESLint 配置
+```json
+{
+  "extends": [
+    "@vue/typescript/recommended",
+    "@typescript-eslint/recommended",
+    "@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/explicit-function-return-type": "warn",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/no-unnecessary-type-assertion": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+    "@typescript-eslint/require-await": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-return": "error"
+  }
+}
+```
+
+### 2. 类型守卫规范
+```typescript
+// src/core/utils/typeGuards.ts
+/**
+ * 类型守卫函数
+ */
+export const isString = (value: unknown): value is string => {
+  return typeof value === 'string'
+}
+
+export const isNumber = (value: unknown): value is number => {
+  return typeof value === 'number' && !isNaN(value)
+}
+
+export const isArray = <T>(value: unknown): value is T[] => {
+  return Array.isArray(value)
+}
+
+export const isObject = (value: unknown): value is Record<string, unknown> => {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+export const isFunction = (value: unknown): value is Function => {
+  return typeof value === 'function'
+}
+
+/**
+ * 检查对象是否具有特定属性
+ */
+export const hasProperty = <T extends string>(
+  obj: unknown,
+  prop: T
+): obj is Record<T, unknown> => {
+  return isObject(obj) && prop in obj
+}
+```
+
+### 3. 错误处理类型
+```typescript
+// src/core/types/errors.ts
+/**
+ * 应用错误基类
+ */
+export abstract class AppError extends Error {
+  abstract readonly code: string
+  abstract readonly statusCode: number
+  
+  constructor(message: string, public readonly context?: Record<string, unknown>) {
+    super(message)
+    this.name = this.constructor.name
+  }
+}
+
+/**
+ * 验证错误
+ */
+export class ValidationError extends AppError {
+  readonly code = 'VALIDATION_ERROR'
+  readonly statusCode = 400
+}
+
+/**
+ * 认证错误
+ */
+export class AuthenticationError extends AppError {
+  readonly code = 'AUTHENTICATION_ERROR'
+  readonly statusCode = 401
+}
+
+/**
+ * 权限错误
+ */
+export class AuthorizationError extends AppError {
+  readonly code = 'AUTHORIZATION_ERROR'
+  readonly statusCode = 403
+}
+
+/**
+ * 资源未找到错误
+ */
+export class NotFoundError extends AppError {
+  readonly code = 'NOT_FOUND_ERROR'
+  readonly statusCode = 404
+}
+
+/**
+ * 服务器错误
+ */
+export class ServerError extends AppError {
+  readonly code = 'SERVER_ERROR'
+  readonly statusCode = 500
+}
+```
+
+## 最佳实践总结
+
+### 1. 类型安全原则
+- 避免使用 `any` 类型
+- 使用严格的类型检查配置
+- 为所有函数定义返回类型
+- 使用类型守卫进行运行时类型检查
+
+### 2. 代码组织原则
+- 类型定义集中管理
+- 使用泛型提高代码复用性
+- 接口设计遵循单一职责原则
+- 错误处理类型化
+
+### 3. 性能优化原则
+- 使用 `readonly` 修饰符
+- 避免不必要的类型断言
+- 使用类型别名简化复杂类型
+- 合理使用联合类型和交叉类型

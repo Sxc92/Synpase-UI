@@ -1,0 +1,99 @@
+---
+alwaysApply: true
+description: Vue3 + TypeScript 最佳实践规则
+---
+
+# Vue3 + TypeScript 最佳实践规则
+
+## 核心原则
+- 使用 Vue 3.x 版本，优先使用 Composition API
+- 组件模板使用 `<script setup>` 语法
+- 使用 Vite 6 作为构建工具
+- 严格遵循 TypeScript 类型安全
+
+## 组件开发规范
+
+### 1. 组件结构
+```vue
+<template>
+  <!-- 模板内容 -->
+</template>
+
+<script setup lang="ts">
+// 导入
+import { ref, computed, onMounted } from 'vue'
+import type { ComponentProps } from './types'
+
+// 接口定义
+interface Props {
+  title: string
+  count?: number
+}
+
+// Props 定义
+const props = withDefaults(defineProps<Props>(), {
+  count: 0
+})
+
+// Emits 定义
+const emit = defineEmits<{
+  update: [value: string]
+  change: [id: number]
+}>()
+
+// 响应式数据
+const isLoading = ref(false)
+const data = ref<ComponentProps[]>([])
+
+// 计算属性
+const filteredData = computed(() => {
+  return data.value.filter(item => item.active)
+})
+
+// 方法
+const handleClick = () => {
+  emit('update', 'new value')
+}
+
+// 生命周期
+onMounted(() => {
+  // 初始化逻辑
+})
+</script>
+
+<style scoped lang="scss">
+/* 样式 */
+</style>
+```
+
+### 2. 类型定义规范
+- 所有接口使用 `interface` 定义
+- 组件 Props 必须定义类型
+- 使用 `withDefaults` 为 Props 提供默认值
+- Emits 必须定义事件类型
+- 响应式数据必须指定类型
+
+### 3. 文件命名规范
+- 组件文件使用 PascalCase：`UserProfile.vue`
+- 工具函数使用 camelCase：`formatDate.ts`
+- 类型定义文件使用 camelCase：`userTypes.ts`
+- 常量文件使用 UPPER_SNAKE_CASE：`API_CONSTANTS.ts`
+
+### 4. 导入导出规范
+- 优先使用具名导入/导出
+- 类型导入使用 `import type`
+- 组件导入使用相对路径
+- 工具库导入使用绝对路径
+
+### 5. 响应式数据规范
+- 优先使用 `ref` 和 `reactive`
+- 复杂对象使用 `reactive`
+- 基本类型使用 `ref`
+- 使用 `computed` 创建计算属性
+- 使用 `watch` 和 `watchEffect` 监听变化
+
+## 代码质量要求
+- 所有函数必须添加 JSDoc 注释
+- 复杂逻辑必须添加行内注释
+- 使用 ESLint + Prettier 保持代码风格一致
+- 组件必须支持 TypeScript 类型检查

@@ -1,0 +1,463 @@
+---
+alwaysApply: true
+description: 项目架构规范 - 业务包和核心包分离
+---
+
+# 项目架构规范 - 业务包和核心包分离
+
+## 整体架构设计
+
+### 1. 项目结构
+```
+src/
+├── core/                    # 核心包 - 通用功能
+│   ├── components/         # 核心组件
+│   ├── composables/        # 核心组合式函数
+│   ├── utils/             # 核心工具函数
+│   ├── types/             # 核心类型定义
+│   ├── constants/         # 核心常量
+│   ├── stores/            # 核心状态管理
+│   └── api/               # 核心 API
+├── business/               # 业务包 - 业务特定功能
+│   ├── modules/           # 业务模块
+│   │   ├── user/          # 用户模块
+│   │   ├── order/         # 订单模块
+│   │   └── product/       # 产品模块
+│   ├── components/        # 业务组件
+│   ├── views/             # 业务页面
+│   └── types/             # 业务类型定义
+├── shared/                 # 共享资源
+│   ├── assets/            # 静态资源
+│   ├── styles/            # 样式文件
+│   └── locales/           # 国际化文件
+└── app/                   # 应用入口
+    ├── App.vue
+    ├── main.ts
+    └── router/
+```
+
+## 核心包 (Core Package) 规范
+
+### 1. 核心组件规范
+```typescript
+// src/core/components/BaseButton.vue
+<template>
+  <button 
+    :class="buttonClasses" 
+    :disabled="disabled"
+    @click="handleClick"
+  >
+    <slot />
+  </button>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { cn } from '@/core/utils/cn'
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'danger'
+  size?: 'sm' | 'md' | 'lg'
+  disabled?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  variant: 'primary',
+  size: 'md',
+  disabled: false,
+})
+
+const emit = defineEmits<{
+  click: [event: MouseEvent]
+}>()
+
+const buttonClasses = computed(() => {
+  return cn(
+    'base-button',
+    `base-button--${props.variant}`,
+    `base-button--${props.size}`,
+    {
+      'base-button--disabled': props.disabled,
+    }
+  )
+})
+
+const handleClick = (event: MouseEvent) => {
+  if (!props.disabled) {
+    emit('click', event)
+  }
+}
+</script>
+```
+
+### 2. 核心工具函数规范
+```typescript
+// src/core/utils/format.ts
+/**
+ * 格式化日期
+ * @param date 日期对象或时间戳
+ * @param format 格式化字符串
+ * @returns 格式化后的日期字符串
+ */
+export const formatDate = (
+  date: Date | number | string,
+  format: string = 'YYYY-MM-DD'
+): string => {
+  // 实现逻辑
+}
+
+/**
+ * 格式化货币
+ * @param amount 金额
+ * @param currency 货币类型
+ * @returns 格式化后的货币字符串
+ */
+export const formatCurrency = (
+  amount: number,
+  currency: string = 'CNY'
+): string => {
+  // 实现逻辑
+}
+
+// src/core/utils/cn.ts
+/**
+ * 类名合并工具函数
+ * @param classes 类名数组或对象
+ * @returns 合并后的类名字符串
+ */
+export const cn = (...classes: (string | Record<string, boolean> | undefined)[]): string => {
+  // 实现逻辑
+}
+```
+
+### 3. 核心类型定义规范
+```typescript
+// src/core/types/common.ts
+/**
+ * API 响应基础类型
+ */
+export interface ApiResponse<T = any> {
+  code: number
+  message: string
+  data: T
+  timestamp: number
+}
+
+/**
+ * 分页参数
+ */
+export interface PaginationParams {
+  page: number
+  pageSize: number
+  total?: number
+}
+
+/**
+ * 分页响应
+ */
+export interface PaginationResponse<T> {
+  list: T[]
+  pagination: PaginationParams
+}
+
+// src/core/types/component.ts
+/**
+ * 组件基础 Props
+ */
+export interface BaseComponentProps {
+  className?: string
+  style?: Record<string, any>
+}
+
+/**
+ * 表单组件 Props
+ */
+export interface FormComponentProps extends BaseComponentProps {
+  disabled?: boolean
+  readonly?: boolean
+  required?: boolean
+}
+```
+
+### 4. 核心组合式函数规范
+```typescript
+// src/core/composables/useApi.ts
+import { ref, type Ref } from 'vue'
+import type { ApiResponse } from '@/core/types/common'
+
+export interface UseApiOptions<T> {
+  immediate?: boolean
+  onSuccess?: (data: T) => void
+  onError?: (error: Error) => void
+}
+
+export function useApi<T>(
+  apiFunction: () => Promise<ApiResponse<T>>,
+  options: UseApiOptions<T> = {}
+) {
+  const { immediate = false, onSuccess, onError } = options
+  
+  const data: Ref<T | null> = ref(null)
+  const loading = ref(false)
+  const error = ref<Error | null>(null)
+  
+  const execute = async () => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      const response = await apiFunction()
+      data.value = response.data
+      
+      onSuccess?.(response.data)
+    } catch (err) {
+      error.value = err as Error
+      onError?.(err as Error)
+    } finally {
+      loading.value = false
+    }
+  }
+  
+  if (immediate) {
+    execute()
+  }
+  
+  return {
+    data,
+    loading,
+    error,
+    execute,
+  }
+}
+```
+
+## 业务包 (Business Package) 规范
+
+### 1. 业务模块结构
+```
+src/business/modules/user/
+├── components/           # 用户相关组件
+│   ├── UserProfile.vue
+│   ├── UserList.vue
+│   └── UserForm.vue
+├── views/               # 用户相关页面
+│   ├── UserManagement.vue
+│   └── UserDetail.vue
+├── stores/              # 用户状态管理
+│   └── userStore.ts
+├── api/                 # 用户 API
+│   └── userApi.ts
+├── types/               # 用户类型定义
+│   └── userTypes.ts
+└── index.ts             # 模块导出
+```
+
+### 2. 业务组件规范
+```vue
+<!-- src/business/modules/user/components/UserProfile.vue -->
+<template>
+  <div class="user-profile">
+    <BaseButton 
+      variant="primary" 
+      @click="handleEdit"
+    >
+      编辑资料
+    </BaseButton>
+    
+    <UserForm 
+      v-if="isEditing"
+      :user="userInfo"
+      @save="handleSave"
+      @cancel="handleCancel"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { BaseButton } from '@/core/components'
+import { UserForm } from './UserForm.vue'
+import { useUserStore } from '../stores/userStore'
+import type { User } from '../types/userTypes'
+
+const userStore = useUserStore()
+const isEditing = ref(false)
+
+const userInfo = computed(() => userStore.userInfo)
+
+const handleEdit = () => {
+  isEditing.value = true
+}
+
+const handleSave = async (userData: Partial<User>) => {
+  await userStore.updateUser(userData)
+  isEditing.value = false
+}
+
+const handleCancel = () => {
+  isEditing.value = false
+}
+</script>
+```
+
+### 3. 业务 API 规范
+```typescript
+// src/business/modules/user/api/userApi.ts
+import { request } from '@/core/api'
+import type { User, CreateUserRequest, UpdateUserRequest } from '../types/userTypes'
+
+export const userApi = {
+  // 获取用户列表
+  getUserList: (params: PaginationParams) => {
+    return request.get<ApiResponse<PaginationResponse<User>>>('/users', { params })
+  },
+  
+  // 创建用户
+  createUser: (data: CreateUserRequest) => {
+    return request.post<ApiResponse<User>>('/users', data)
+  },
+  
+  // 更新用户
+  updateUser: (id: string, data: UpdateUserRequest) => {
+    return request.put<ApiResponse<User>>(`/users/${id}`, data)
+  },
+  
+  // 删除用户
+  deleteUser: (id: string) => {
+    return request.delete<ApiResponse<void>>(`/users/${id}`)
+  },
+}
+```
+
+### 4. 业务状态管理规范
+```typescript
+// src/business/modules/user/stores/userStore.ts
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { userApi } from '../api/userApi'
+import type { User, CreateUserRequest, UpdateUserRequest } from '../types/userTypes'
+
+export const useUserStore = defineStore('user', () => {
+  // 状态
+  const users = ref<User[]>([])
+  const currentUser = ref<User | null>(null)
+  const loading = ref(false)
+  
+  // 计算属性
+  const userCount = computed(() => users.value.length)
+  const activeUsers = computed(() => 
+    users.value.filter(user => user.status === 'active')
+  )
+  
+  // 方法
+  const fetchUsers = async (params: PaginationParams) => {
+    loading.value = true
+    try {
+      const response = await userApi.getUserList(params)
+      users.value = response.data.list
+    } finally {
+      loading.value = false
+    }
+  }
+  
+  const createUser = async (data: CreateUserRequest) => {
+    const response = await userApi.createUser(data)
+    users.value.push(response.data)
+    return response.data
+  }
+  
+  const updateUser = async (id: string, data: UpdateUserRequest) => {
+    const response = await userApi.updateUser(id, data)
+    const index = users.value.findIndex(user => user.id === id)
+    if (index !== -1) {
+      users.value[index] = response.data
+    }
+    return response.data
+  }
+  
+  return {
+    // 状态
+    users,
+    currentUser,
+    loading,
+    // 计算属性
+    userCount,
+    activeUsers,
+    // 方法
+    fetchUsers,
+    createUser,
+    updateUser,
+  }
+})
+```
+
+## 模块导出规范
+
+### 1. 核心包导出
+```typescript
+// src/core/index.ts
+export * from './components'
+export * from './composables'
+export * from './utils'
+export * from './types'
+export * from './constants'
+export * from './stores'
+export * from './api'
+```
+
+### 2. 业务模块导出
+```typescript
+// src/business/modules/user/index.ts
+export { default as UserProfile } from './components/UserProfile.vue'
+export { default as UserList } from './components/UserList.vue'
+export { default as UserForm } from './components/UserForm.vue'
+export { default as UserManagement } from './views/UserManagement.vue'
+export { default as UserDetail } from './views/UserDetail.vue'
+export { useUserStore } from './stores/userStore'
+export * from './api/userApi'
+export * from './types/userTypes'
+```
+
+## 依赖关系规范
+
+### 1. 依赖方向
+- 业务包可以依赖核心包
+- 核心包不能依赖业务包
+- 业务模块之间避免直接依赖
+- 通过事件总线或状态管理进行模块间通信
+
+### 2. 导入规范
+```typescript
+// 核心包导入
+import { BaseButton, formatDate, useApi } from '@/core'
+
+// 业务模块导入
+import { UserProfile, useUserStore } from '@/business/modules/user'
+
+// 避免跨模块直接导入
+// ❌ 错误示例
+import { OrderStore } from '@/business/modules/order/stores/orderStore'
+
+// ✅ 正确示例
+import { useEventBus } from '@/core/composables/useEventBus'
+```
+
+## 最佳实践总结
+
+### 1. 核心包设计原则
+- 保持通用性和可复用性
+- 避免业务逻辑耦合
+- 提供稳定的 API 接口
+- 完善的类型定义
+
+### 2. 业务包设计原则
+- 按功能模块划分
+- 模块内部高内聚
+- 模块间低耦合
+- 可独立开发和测试
+
+### 3. 代码组织原则
+- 单一职责原则
+- 开闭原则
+- 依赖倒置原则
+- 接口隔离原则

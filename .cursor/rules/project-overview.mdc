@@ -1,0 +1,200 @@
+---
+alwaysApply: true
+description: SynapseUI 项目开发规范总览
+---
+
+# SynapseUI 项目开发规范总览
+
+## 项目技术栈
+- **前端框架**: Vue 3.x + TypeScript
+- **构建工具**: Vite 6
+- **UI 框架**: Ant Design Vue 4.x + Tailwind CSS + Shadcn UI (Vue 版本) + Vxe Table
+- **图标库**: Iconify 最新稳定版本
+- **状态管理**: Pinia
+- **路由管理**: Vue Router
+- **HTTP 客户端**: Axios
+- **样式预处理**: SCSS
+
+## 项目架构设计
+
+### 核心包 (Core Package)
+- 通用组件和工具函数
+- 核心业务逻辑
+- 类型定义和常量
+- API 基础封装
+
+### 业务包 (Apps Package)
+- 业务特定功能模块
+- 业务组件和页面
+- 业务状态管理
+- 业务 API 接口
+
+## 开发规范文件
+
+### 1. Vue3 + TypeScript 最佳实践
+- 文件: [vue3-typescript-best-practices.mdc](mdc:vue3-typescript-best-practices.mdc)
+- 内容: 组件开发规范、类型定义、文件命名、导入导出规范
+
+### 2. UI 框架使用规范
+- 文件: [ui-framework-standards.mdc](mdc:ui-framework-standards.mdc)
+- 内容: Ant Design、Tailwind CSS、Shadcn UI、Vxe Table、Iconify 使用规范
+
+### 3. 状态管理和路由规范
+- 文件: [state-management-routing.mdc](mdc:state-management-routing.mdc)
+- 内容: Pinia、Vue Router、Axios 使用规范和最佳实践
+
+### 4. 项目架构规范
+- 文件: [project-architecture.mdc](mdc:project-architecture.mdc)
+- 内容: 核心包和业务包分离、模块组织、依赖关系规范
+
+### 5. TypeScript 严格类型检查
+- 文件: [typescript-strict-typing.mdc](mdc:typescript-strict-typing.mdc)
+- 内容: 类型定义、严格类型检查、代码质量规范
+
+## 快速开始指南
+
+### 1. 创建新组件
+```vue
+<template>
+  <div class="component-name">
+    <!-- 使用 Tailwind CSS 类名 -->
+    <BaseButton variant="primary" @click="handleClick">
+      <Icon icon="mdi:plus" class="w-4 h-4" />
+      添加
+    </BaseButton>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { BaseButton } from '@/core/components'
+import { Icon } from '@iconify/vue'
+
+interface Props {
+  title: string
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  click: [value: string]
+}>()
+
+const handleClick = () => {
+  emit('click', 'new value')
+}
+</script>
+
+<style scoped lang="scss">
+.component-name {
+  // 自定义样式
+}
+</style>
+```
+
+### 2. 创建新 Store
+```typescript
+// src/business/modules/example/stores/exampleStore.ts
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import type { ExampleData } from '../types/exampleTypes'
+
+export const useExampleStore = defineStore('example', () => {
+  const data = ref<ExampleData[]>([])
+  const loading = ref(false)
+  
+  const dataCount = computed(() => data.value.length)
+  
+  const fetchData = async () => {
+    loading.value = true
+    try {
+      // API 调用
+    } finally {
+      loading.value = false
+    }
+  }
+  
+  return {
+    data,
+    loading,
+    dataCount,
+    fetchData,
+  }
+})
+```
+
+### 3. 创建新 API
+```typescript
+// src/business/modules/example/api/exampleApi.ts
+import { request } from '@/core/api'
+import type { ExampleData, CreateExampleRequest } from '../types/exampleTypes'
+
+export const exampleApi = {
+  getList: () => request.get<ExampleData[]>('/examples'),
+  create: (data: CreateExampleRequest) => request.post<ExampleData>('/examples', data),
+  update: (id: string, data: Partial<ExampleData>) => 
+    request.put<ExampleData>(`/examples/${id}`, data),
+  delete: (id: string) => request.delete(`/examples/${id}`),
+}
+```
+
+## 代码质量要求
+
+### 1. 类型安全
+- 所有函数必须定义返回类型
+- 避免使用 `any` 类型
+- 使用严格的 TypeScript 配置
+- 为所有 Props 和 Emits 定义类型
+
+### 2. 代码风格
+- 使用 ESLint + Prettier 保持代码风格一致
+- 所有函数必须添加 JSDoc 注释
+- 复杂逻辑必须添加行内注释
+- 遵循 Vue 3 Composition API 最佳实践
+
+### 3. 性能优化
+- 使用 `computed` 创建计算属性
+- 合理使用 `watch` 和 `watchEffect`
+- 组件懒加载
+- 避免不必要的重新渲染
+
+## 开发流程
+
+### 1. 功能开发
+1. 在核心包中定义基础类型和工具函数
+2. 在业务包中实现具体功能
+3. 创建对应的组件、Store 和 API
+4. 编写单元测试
+5. 代码审查和优化
+
+### 2. 代码审查要点
+- 类型定义是否完整
+- 组件是否遵循最佳实践
+- 状态管理是否合理
+- 错误处理是否完善
+- 性能是否优化
+
+## 注意事项
+
+### 1. 依赖管理
+- 核心包不能依赖业务包
+- 业务模块之间避免直接依赖
+- 使用事件总线进行模块间通信
+
+### 2. 样式管理
+- 优先使用 Tailwind CSS 工具类
+- 复杂样式使用 SCSS
+- 遵循设计系统规范
+
+### 3. 错误处理
+- 统一的错误处理机制
+- 用户友好的错误提示
+- 完善的错误日志记录
+
+## 相关文档
+- [Vue 3 官方文档](https://vuejs.org/)
+- [TypeScript 官方文档](https://www.typescriptlang.org/)
+- [Vite 官方文档](https://vitejs.dev/)
+- [Ant Design Vue 文档](https://antdv.com/)
+- [Tailwind CSS 文档](https://tailwindcss.com/)
+- [Pinia 文档](https://pinia.vuejs.org/)
+- [Vue Router 文档](https://router.vuejs.org/)
